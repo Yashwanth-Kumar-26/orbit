@@ -7,7 +7,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "X — What did you build?",
+  title: "Orbit — What did you build?",
   description:
     "A social platform for builders to showcase creations, gain recognition, and establish credibility.",
 };
