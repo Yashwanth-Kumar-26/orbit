@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { Button } from "./ui/button";
-import { Github, Mail } from "lucide-react";
+import { Github } from "lucide-react";
 
 export function SignInButtons() {
   return (
@@ -15,15 +15,6 @@ export function SignInButtons() {
       >
         <Github className="h-5 w-5" />
         Continue with GitHub
-      </Button>
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={() => signIn("google", { redirectTo: "/" })}
-        className="gap-2"
-      >
-        <Mail className="h-5 w-5" />
-        Continue with Google
       </Button>
     </div>
   );
