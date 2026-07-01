@@ -8,7 +8,7 @@ import { eq, or } from "drizzle-orm";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: DrizzleAdapter(db),
   providers: [
-    GitHub({ allowDangerousEmailAccountLinking: true }),
+    GitHub({}),
   ],
   session: { strategy: "database" },
   pages: {
@@ -86,6 +86,6 @@ async function generateUniqueUsername(base: string): Promise<string> {
   if (existing.length === 0) return base;
 
   // Append random suffix
-  const suffix = Math.random().toString(36).substring(2, 6);
+  const suffix = crypto.randomUUID().substring(0, 4);
   return `${base}${suffix}`;
 }

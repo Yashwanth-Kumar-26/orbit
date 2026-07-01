@@ -40,10 +40,9 @@ export async function GET(_request: NextRequest) {
       return Response.json(
         {
           success: false,
-          error: "Failed to fetch repos from GitHub",
-          repos: [],
+          error: "Failed to fetch repos from GitHub. Make sure you signed in with GitHub.",
         },
-        { status: 200 },
+        { status: 502 },
       );
     }
 

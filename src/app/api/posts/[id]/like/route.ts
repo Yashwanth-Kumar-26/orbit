@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { likes, posts } from "@/db/schema";
-import { apiOk, apiError, requireAuth, handleApiError, ApiError } from "@/lib/api-helpers";
+import { apiOk, apiError, requireAuth, handleApiError, ApiError, applyRateLimit } from "@/lib/api-helpers";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { sql } from "drizzle-orm";
 
 function recalculateTrendingScore(postId: string) {
@@ -22,9 +23,10 @@ export async function POST(
     const { id: postId } = await params;
     const session = await requireAuth();
     const userId = session.user?.id;
-    if (!userId) {
-      return apiError(401, "Authentication required");
-    }
+    if (!userId) return apiError(401, "Authentication required");
+
+    const rateCheck = applyRateLimit(`like:${userId}`, RATE_LIMITS.write);
+    if (rateCheck) return rateCheck;
 
     // Check post exists
     const [post] = await db
@@ -48,7 +50,7 @@ export async function POST(
       return apiOk({ liked: true });
     }
 
-    const likeId = `like_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const likeId = `like_${crypto.randomUUID().substring(0, 8)}`;
 
     await db.insert(likes).values({ id: likeId, user_id: userId, post_id: postId });
     await db
@@ -72,8 +74,20 @@ export async function DELETE(
     const { id: postId } = await params;
     const session = await requireAuth();
     const userId = session.user?.id;
-    if (!userId) {
-      return apiError(401, "Authentication required");
+    if (!userId) return apiError(401, "Authentication required");
+
+    const rateCheck = applyRateLimit(`unlike:${userId}`, RATE_LIMITS.write);
+    if (rateCheck) return rateCheck;
+
+    // Check post exists
+    const [post] = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(eq(posts.id, postId))
+      .limit(1);
+
+    if (!post) {
+      throw new ApiError(404, "Post not found");
     }
 
     const [existing] = await db

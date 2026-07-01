@@ -25,13 +25,18 @@ function parseEnv() {
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missing = error.errors
-        .map((e) => e.path.join("."))
+        .map((e) => `${e.path.join(".")}: ${e.message}`)
         .join(", ");
       console.error(`[ERROR] Invalid environment variables: ${missing}`);
-      // In dev, return partial to avoid crashing on first setup
       if (process.env.NODE_ENV === "development") {
         console.warn("[WARN] Running with partial env -- some features will be unavailable");
-        return process.env as unknown as z.infer<typeof envSchema>;
+        // Return a partial type so code that reads missing keys gets undefined
+        const partial: Partial<z.infer<typeof envSchema>> = {};
+        for (const key of Object.keys(envSchema.shape)) {
+          partial[key as keyof typeof partial] =
+            process.env[key] as any;
+        }
+        return partial as z.infer<typeof envSchema>;
       }
       process.exit(1);
     }

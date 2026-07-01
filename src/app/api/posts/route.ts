@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import { desc, gte, sql, lt, and } from "drizzle-orm";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
-import { apiOk, apiError, requireAuth, handleApiError } from "@/lib/api-helpers";
+import { apiOk, apiError, requireAuth, handleApiError, applyRateLimit } from "@/lib/api-helpers";
 import { createPostSchema } from "@/lib/validations/post";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 
 const SEVEN_DAYS = () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 const PAGE_SIZE = 20;
@@ -17,10 +18,13 @@ export async function GET(request: NextRequest) {
     const baseQuery = db.select().from(posts);
 
     if (sort === "trending") {
-      // Trending: posts from last 7 days, ordered by trending_score
       const conditions = [gte(posts.created_at, SEVEN_DAYS())];
       if (cursor) {
-        conditions.push(lt(posts.trending_score, Number(cursor)));
+        // Compound cursor: (trending_score, created_at) to avoid duplicates
+        const [score, lastCreatedAt] = cursor.split("_");
+        conditions.push(
+          sql`(${posts.trending_score} < ${Number(score)} OR (${posts.trending_score} = ${Number(score)} AND ${posts.created_at} < ${new Date(lastCreatedAt)}::timestamptz))`,
+        );
       }
       const results = await baseQuery
         .where(and(...conditions))
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
         posts: results,
         nextCursor:
           results.length === PAGE_SIZE
-            ? String(results[results.length - 1].trending_score)
+            ? `${results[results.length - 1].trending_score}_${results[results.length - 1].created_at.toISOString()}`
             : null,
         sort: "trending",
       });
@@ -64,6 +68,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth();
     const userId = session.user?.id;
+    if (!userId) return apiError(401, "Authentication required");
+
+    const rateCheck = applyRateLimit(`post:${userId}`, RATE_LIMITS.write);
+    if (rateCheck) return rateCheck;
     if (!userId) {
       return apiError(401, "Authentication required");
     }
@@ -71,7 +79,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = createPostSchema.parse(body);
 
-    const postId = `post_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const postId = `post_${crypto.randomUUID().substring(0, 8)}`;
 
     const [post] = await db
       .insert(posts)

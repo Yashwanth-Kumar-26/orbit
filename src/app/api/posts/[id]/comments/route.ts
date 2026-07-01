@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import { eq, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { comments, posts } from "@/db/schema";
-import { apiOk, apiError, requireAuth, handleApiError, ApiError } from "@/lib/api-helpers";
+import { apiOk, apiError, requireAuth, handleApiError, ApiError, applyRateLimit } from "@/lib/api-helpers";
 import { createCommentSchema } from "@/lib/validations/comment";
+import { RATE_LIMITS } from "@/lib/rate-limit";
 import { sql } from "drizzle-orm";
 
 export async function GET(
@@ -44,9 +45,10 @@ export async function POST(
     const { id: postId } = await params;
     const session = await requireAuth();
     const userId = session.user?.id;
-    if (!userId) {
-      return apiError(401, "Authentication required");
-    }
+    if (!userId) return apiError(401, "Authentication required");
+
+    const rateCheck = applyRateLimit(`comment:${userId}`, RATE_LIMITS.write);
+    if (rateCheck) return rateCheck;
 
     const [post] = await db
       .select({ id: posts.id })
@@ -61,7 +63,7 @@ export async function POST(
     const body = await request.json();
     const parsed = createCommentSchema.parse(body);
 
-    const commentId = `cmt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const commentId = `cmt_${crypto.randomUUID().substring(0, 8)}`;
 
     const [comment] = await db
       .insert(comments)

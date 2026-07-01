@@ -1,6 +1,13 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/env";
 
+// Magic bytes for image file types (first bytes of file content)
+const IMAGE_MAGIC_BYTES: Record<string, Uint8Array[]> = {
+  "image/png": [new Uint8Array([0x89, 0x50, 0x4e, 0x47])],
+  "image/jpeg": [new Uint8Array([0xff, 0xd8, 0xff])],
+  "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
+};
+
 let _client: S3Client | null = null;
 
 function ensureR2Config() {
@@ -49,8 +56,31 @@ export function validateUpload(
     return { valid: false, error: "File too large. Maximum size is 10MB" };
   }
   const ext = contentType.split("/")[1] || "png";
-  const key = `uploads/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+  const key = `uploads/${Date.now()}-${crypto.randomUUID().substring(0, 8)}.${ext}`;
   return { valid: true, key, contentType };
+}
+
+/** Verify file content matches its claimed MIME type using magic bytes. */
+export function verifyMagicBytes(
+  buffer: Uint8Array,
+  contentType: string,
+): { valid: true } | { valid: false; error: string } {
+  const expectedSignatures = IMAGE_MAGIC_BYTES[contentType];
+  if (!expectedSignatures) return { valid: true }; // unknown type, skip check
+
+  for (const sig of expectedSignatures) {
+    if (buffer.length >= sig.length) {
+      const header = buffer.slice(0, sig.length);
+      if (header.every((b, i) => b === sig[i])) {
+        return { valid: true };
+      }
+    }
+  }
+
+  return {
+    valid: false,
+    error: `File content does not match ${contentType} format. Detected bytes do not match expected image header.`,
+  };
 }
 
 /** Upload a file to R2 server-side (bypasses browser CORS). */

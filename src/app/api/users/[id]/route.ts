@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users, posts, verified_repos, accounts } from "@/db/schema";
 import { apiOk, apiError, requireAuth, handleApiError, ApiError } from "@/lib/api-helpers";
 import { updateProfileSchema } from "@/lib/validations/user";
+import { auth } from "@/lib/auth";
 
 export async function GET(
   _request: NextRequest,
@@ -12,9 +13,20 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Resolve by ID or username
+    // Resolve by ID or username (explicit fields -- NEVER select * to avoid leaking PII)
     const user = await db
-      .select()
+      .select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        display_name: users.display_name,
+        image: users.image,
+        avatar_url: users.avatar_url,
+        bio: users.bio,
+        github_username: users.github_username,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+      })
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
@@ -22,7 +34,18 @@ export async function GET(
     if (user.length === 0) {
       // Try resolving by username
       const byUsername = await db
-        .select()
+        .select({
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          display_name: users.display_name,
+          image: users.image,
+          avatar_url: users.avatar_url,
+          bio: users.bio,
+          github_username: users.github_username,
+          created_at: users.created_at,
+          updated_at: users.updated_at,
+        })
         .from(users)
         .where(eq(users.username, id))
         .limit(1);
@@ -30,32 +53,6 @@ export async function GET(
         return apiError(404, "User not found");
       }
       user[0] = byUsername[0];
-    }
-
-    // Auto-generate username if still null (safety net)
-    if (!user[0].username) {
-      const nameSource =
-        user[0].name ||
-        user[0].email?.split("@")[0] ||
-        user[0].id.substring(0, 8);
-      const base = nameSource.toLowerCase().replace(/[^a-z0-9]/g, "");
-      if (base.length > 0) {
-        // Check uniqueness
-        const existing = await db
-          .select({ username: users.username })
-          .from(users)
-          .where(eq(users.username, base))
-          .limit(1);
-        const username = existing.length === 0
-          ? base
-          : `${base}${Math.random().toString(36).substring(2, 6)}`;
-
-        await db
-          .update(users)
-          .set({ username, updated_at: new Date() })
-          .where(eq(users.id, user[0].id));
-        user[0].username = username;
-      }
     }
 
     const userPosts = await db
@@ -71,9 +68,11 @@ export async function GET(
       .where(eq(verified_repos.user_id, user[0].id))
       .limit(50);
 
-    // Fetch GitHub repos (public + private) using OAuth token if available
+    // Fetch GitHub repos -- only for own profile to avoid rate-limit theft
     let githubRepos: any[] = [];
-    if (user[0].github_username) {
+    const viewerId = (await auth())?.user?.id;
+    const isOwner = viewerId === user[0].id;
+    if (isOwner && user[0].github_username) {
       try {
         // Get GitHub access token from accounts
         const ghAccount = await db

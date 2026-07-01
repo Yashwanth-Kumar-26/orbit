@@ -31,10 +31,9 @@ export const createPostSchema = z.object({
   category: categorySchema,
   github_repo: z
     .string()
-    .url("Invalid repo URL")
     .regex(
-      /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/,
-      "Must be a valid GitHub repo URL",
+      /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(?:\/|\.git)?$/,
+      "Must be a valid GitHub repo URL (e.g. https://github.com/owner/repo)",
     )
     .optional()
     .or(z.literal("")),

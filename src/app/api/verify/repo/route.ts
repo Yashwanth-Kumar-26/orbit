@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       return apiOk(updated);
     }
 
-    const id = `vr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const id = `vr_${crypto.randomUUID().substring(0, 8)}`;
 
     const [inserted] = await db
       .insert(verified_repos)
