@@ -16,11 +16,14 @@ import {
 } from "@/components/ui/select";
 import { ImageUpload } from "@/components/ImageUpload";
 import { CATEGORY_LIST } from "@/lib/validations/post";
+import { ImportRepoModal } from "@/components/ImportRepoModal";
+import { Import } from "lucide-react";
 
 export default function NewPostPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -36,6 +39,16 @@ export default function NewPostPage() {
       </div>
     );
   }
+
+  const handleImportSelect = (repo: {
+    title: string;
+    description: string;
+    githubRepo: string;
+  }) => {
+    setTitle(repo.title);
+    setDescription(repo.description);
+    setGithubRepo(repo.githubRepo);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +90,24 @@ export default function NewPostPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">Share your project</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Share your project</h1>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setShowImport(true)}
+          className="gap-2"
+        >
+          <Import className="h-4 w-4" />
+          Import
+        </Button>
+      </div>
+
+      <ImportRepoModal
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        onSelect={handleImportSelect}
+      />
 
       <form onSubmit={handleSubmit} className="glass rounded-xl p-6 space-y-6">
         {/* Image upload */}
@@ -128,7 +158,7 @@ export default function NewPostPage() {
 
         {/* GitHub repo */}
         <div className="space-y-2">
-          <Label htmlFor="githubRepo">GitHub Repository (optional)</Label>
+          <Label htmlFor="githubRepo">GitHub Repository</Label>
           <Input
             id="githubRepo"
             value={githubRepo}
@@ -148,9 +178,7 @@ export default function NewPostPage() {
           />
         </div>
 
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" disabled={saving} className="w-full">
           {saving ? "Publishing..." : "Publish Project"}
