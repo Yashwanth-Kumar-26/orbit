@@ -1,14 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "@/db";
-import { dash } from "@better-auth/infra";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     usePlural: true,
   }),
-  plugins: [dash()],
   socialProviders: {
     github: {
       clientId: process.env.AUTH_GITHUB_ID || "",
