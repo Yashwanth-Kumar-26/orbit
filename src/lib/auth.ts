@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { dash } from "@better-auth/infra";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -9,6 +10,7 @@ export const auth = betterAuth({
     usePlural: true,
     schema,
   }),
+  plugins: [dash()],
   socialProviders: {
     github: {
       clientId: process.env.AUTH_GITHUB_ID || "",
