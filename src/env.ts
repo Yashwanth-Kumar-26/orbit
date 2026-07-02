@@ -25,7 +25,7 @@ function parseEnv() {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missing = error.errors
+      const missing = error.issues
         .map((e) => `${e.path.join(".")}: ${e.message}`)
         .join(", ");
       console.error(`[ERROR] Invalid environment variables: ${missing}`);
