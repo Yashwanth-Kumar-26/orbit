@@ -7,6 +7,7 @@ const envSchema = z.object({
   AUTH_SECRET: z.string().min(32),
   AUTH_GITHUB_ID: z.string().min(1),
   AUTH_GITHUB_SECRET: z.string().min(1),
+  BETTER_AUTH_URL: z.string().url().optional(),
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
   // Cloudflare R2 (optional — only needed for upload API at runtime)
