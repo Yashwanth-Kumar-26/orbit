@@ -13,7 +13,7 @@ import { sql } from "drizzle-orm";
 
 // ─── Auth.js Tables ──────────────────────────────────────────────
 
-export const users = pgTable("user", {
+export const users = pgTable("users", {
   id: text("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").unique(),
   name: text("name"),                    // Auth.js standard
@@ -33,7 +33,7 @@ export const users = pgTable("user", {
 });
 
 export const accounts = pgTable(
-  "account",
+  "accounts",
   {
     id: text("id").primaryKey().default(sql`gen_random_uuid()`),
     userId: text("userId")
@@ -56,7 +56,7 @@ export const accounts = pgTable(
   ],
 );
 
-export const sessions = pgTable("session", {
+export const sessions = pgTable("sessions", {
   id: text("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("userId")
     .notNull()
@@ -65,17 +65,18 @@ export const sessions = pgTable("session", {
   expires: timestamp("expires", { withTimezone: true }).notNull(),
 });
 
-export const verification_tokens = pgTable(
-  "verification_token",
-  {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull(),
-    expires: timestamp("expires", { withTimezone: true }).notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.identifier, table.token] }),
-  ],
-);
+export const verifications = pgTable("verifications", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expiresAt", { withTimezone: true }).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true })
+    .default(sql`NOW()`)
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true })
+    .default(sql`NOW()`)
+    .notNull(),
+});
 
 // ─── App Tables ───────────────────────────────────────────────────
 
