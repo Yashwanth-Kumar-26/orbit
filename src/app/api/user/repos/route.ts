@@ -4,10 +4,10 @@ import { db } from "@/db";
 import { accounts } from "@/db/schema";
 import { requireAuth, apiOk, handleApiError } from "@/lib/api-helpers";
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await requireAuth();
-    const userId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const userId = user.id;
     if (!userId) {
       return Response.json(
         { success: false, error: "Authentication required" },

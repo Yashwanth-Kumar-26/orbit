@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth();
-    const userId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const userId = user.id;
     if (!userId) return apiError(401, "Authentication required");
 
     const rateCheck = applyRateLimit(`post:${userId}`, RATE_LIMITS.write);

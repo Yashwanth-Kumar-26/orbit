@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { auth } from "./auth";
 import { checkRateLimit, RATE_LIMITS, type RateLimitConfig } from "./rate-limit";
 
@@ -49,14 +49,22 @@ export function applyRateLimit(
 }
 
 /**
- * Require an authenticated session. Returns the session object or throws a 401.
+ * Require an authenticated session from a NextRequest.
+ * Returns { user, session } or throws 401.
  */
-export async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) {
+export async function requireAuth(request?: NextRequest) {
+  const headers = request?.headers || new Headers();
+  const result = await auth.api.getSession({ headers });
+  if (!result?.user?.id) {
     throw new ApiError(401, "Authentication required");
   }
-  return session;
+  return { user: result.user, session: result.session };
+}
+
+/** Get session from request without throwing (for optional auth). */
+export async function getOptionalAuth(request?: NextRequest) {
+  const headers = request?.headers || new Headers();
+  return auth.api.getSession({ headers });
 }
 
 export class ApiError extends Error {

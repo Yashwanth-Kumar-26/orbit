@@ -7,8 +7,8 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireAuth();
-    const userId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const userId = user.id;
     if (!userId) return apiError(401, "Authentication required");
 
     // Rate limit uploads: 3 per 30s per user

@@ -6,7 +6,7 @@ import { apiOk, apiError, requireAuth, handleApiError, ApiError } from "@/lib/ap
 import { updatePostSchema } from "@/lib/validations/post";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -41,8 +41,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const session = await requireAuth();
-    const currentUserId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const currentUserId = user.id;
     if (!currentUserId) {
       return apiError(401, "Authentication required");
     }
@@ -76,13 +76,13 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    const session = await requireAuth();
-    const currentUserId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const currentUserId = user.id;
     if (!currentUserId) {
       return apiError(401, "Authentication required");
     }

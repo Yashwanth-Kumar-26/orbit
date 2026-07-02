@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export default function EditProfilePage() {
-  const { data: session, update: updateSession } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -44,7 +44,6 @@ export default function EditProfilePage() {
       });
 
       if (res.ok) {
-        await updateSession();
         router.push(`/profile/${userId}`);
       }
     } finally {

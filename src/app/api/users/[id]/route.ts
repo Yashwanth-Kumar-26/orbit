@@ -7,7 +7,7 @@ import { updateProfileSchema } from "@/lib/validations/user";
 import { auth } from "@/lib/auth";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -70,7 +70,8 @@ export async function GET(
 
     // Fetch GitHub repos -- only for own profile to avoid rate-limit theft
     let githubRepos: any[] = [];
-    const viewerId = (await auth())?.user?.id;
+    const viewerSession = await auth.api.getSession({ headers: request.headers });
+    const viewerId = viewerSession?.user?.id;
     const isOwner = viewerId === user[0].id;
     if (isOwner && user[0].github_username) {
       try {
@@ -134,8 +135,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const session = await requireAuth();
-    const currentUserId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const currentUserId = user.id;
     if (!currentUserId) {
       return apiError(401, "Authentication required");
     }

@@ -16,13 +16,13 @@ function recalculateTrendingScore(postId: string) {
 }
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: postId } = await params;
-    const session = await requireAuth();
-    const userId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const userId = user.id;
     if (!userId) return apiError(401, "Authentication required");
 
     const rateCheck = applyRateLimit(`like:${userId}`, RATE_LIMITS.write);
@@ -67,13 +67,13 @@ export async function POST(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: postId } = await params;
-    const session = await requireAuth();
-    const userId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const userId = user.id;
     if (!userId) return apiError(401, "Authentication required");
 
     const rateCheck = applyRateLimit(`unlike:${userId}`, RATE_LIMITS.write);

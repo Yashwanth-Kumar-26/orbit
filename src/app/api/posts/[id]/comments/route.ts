@@ -8,7 +8,7 @@ import { RATE_LIMITS } from "@/lib/rate-limit";
 import { sql } from "drizzle-orm";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -43,8 +43,8 @@ export async function POST(
 ) {
   try {
     const { id: postId } = await params;
-    const session = await requireAuth();
-    const userId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const userId = user.id;
     if (!userId) return apiError(401, "Authentication required");
 
     const rateCheck = applyRateLimit(`comment:${userId}`, RATE_LIMITS.write);

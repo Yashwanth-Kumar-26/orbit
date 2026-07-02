@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn } from "@/lib/auth-client";
 import { Button } from "./ui/button";
 import { Github } from "lucide-react";
 
@@ -10,7 +10,7 @@ export function SignInButtons() {
       <Button
         variant="outline"
         size="lg"
-        onClick={() => signIn("github", { redirectTo: "/" })}
+        onClick={() => signIn.social({ provider: "github", callbackURL: "/" })}
         className="gap-2"
       >
         <Github className="h-5 w-5" />

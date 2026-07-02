@@ -5,13 +5,13 @@ import { follows, users } from "@/db/schema";
 import { apiOk, apiError, requireAuth, handleApiError, ApiError } from "@/lib/api-helpers";
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: followingId } = await params;
-    const session = await requireAuth();
-    const followerId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const followerId = user.id;
     if (!followerId) {
       return apiError(401, "Authentication required");
     }
@@ -56,13 +56,13 @@ export async function POST(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: followingId } = await params;
-    const session = await requireAuth();
-    const followerId = session.user?.id;
+    const { user } = await requireAuth(request);
+    const followerId = user.id;
     if (!followerId) {
       return apiError(401, "Authentication required");
     }
